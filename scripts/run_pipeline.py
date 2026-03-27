@@ -1,0 +1,15 @@
+from arxiv_bot.models import PipelineInput
+from arxiv_bot.orchestrator import PipelineOrchestrator
+
+
+def main() -> None:
+    payload = PipelineInput(
+        seed_links=["https://arxiv.org/abs/1706.03762"],
+        project_description="Example query",
+    )
+    records = PipelineOrchestrator().run(payload)
+    print(f"Scaffold run complete. Records: {len(records)}")
+
+
+if __name__ == "__main__":
+    main()
