@@ -1,4 +1,5 @@
 from arxiv_bot.models import PaperRecord
+from arxiv_bot.skills.discovery import discovery_skill as implemented_discovery_skill
 from arxiv_bot.skills.seed_ingest import seed_ingest_skill as implemented_seed_ingest_skill
 
 
@@ -8,8 +9,9 @@ def seed_ingest_skill(seed_links: list[str]) -> list[str]:
 
 
 def discovery_skill(links: list[str]) -> list[PaperRecord]:
-    """Convert links into placeholder discovered paper records."""
-    return [PaperRecord(source_link=link) for link in links]
+    """Delegate discovery to the concrete implementation with default ranking inputs."""
+    ingested = implemented_seed_ingest_skill(links)
+    return implemented_discovery_skill(ingested)
 
 
 def existence_verification_skill(records: list[PaperRecord]) -> list[PaperRecord]:

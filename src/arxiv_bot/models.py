@@ -12,6 +12,7 @@ class PipelineInput:
 
 @dataclass
 class PaperRecord:
+    """Represent a candidate paper and its processing state through the pipeline."""
     source_link: str
     title: str = ""
     authors: list[str] = field(default_factory=list)
@@ -23,5 +24,6 @@ class PaperRecord:
     bibtex_key: Optional[str] = None
     bibtex_entry: Optional[str] = None
     summary_paragraph: Optional[str] = None
+    relevance_score: Optional[float] = None
     verified: bool = False
     status: str = "discovered"

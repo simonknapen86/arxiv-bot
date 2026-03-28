@@ -21,7 +21,7 @@
 1. `P1-01` Implement `seed_ingest_skill` [DONE]
 - Acceptance criteria: seed links normalized into identifiers
 
-2. `P1-02` Implement `discovery_skill`
+2. `P1-02` Implement `discovery_skill` [DONE]
 - Acceptance criteria: returns ranked candidate paper list
 
 3. `P1-03` Implement `existence_verification_skill`

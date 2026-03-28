@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from arxiv_bot.models import PaperRecord, PipelineInput
+from arxiv_bot.skills.discovery import discovery_skill
 from arxiv_bot.skills.seed_ingest import seed_ingest_skill
 
 
@@ -32,14 +33,17 @@ class PipelineOrchestrator:
         ]
         self.last_run_report: RunReport | None = None
 
-    def _seed_ingest(self, payload: PipelineInput) -> list[str]:
-        """Normalize seed links from pipeline input."""
-        ingested = seed_ingest_skill(payload.seed_links)
-        return [item["source_link"] for item in ingested]
+    def _seed_ingest(self, payload: PipelineInput) -> list[dict[str, str]]:
+        """Normalize and classify seed links from pipeline input."""
+        return seed_ingest_skill(payload.seed_links)
 
-    def _discovery(self, links: list[str]) -> list[PaperRecord]:
-        """Create discovered paper records from normalized links."""
-        return [PaperRecord(source_link=link, status="discovered") for link in links]
+    def _discovery(self, payload: PipelineInput, ingested: list[dict[str, str]]) -> list[PaperRecord]:
+        """Create ranked discovered paper records from ingested seed metadata."""
+        return discovery_skill(
+            ingested,
+            include_keywords=payload.include_keywords,
+            exclude_keywords=payload.exclude_keywords,
+        )
 
     def _existence_verification(self, records: list[PaperRecord]) -> list[PaperRecord]:
         """Mark all records as verified in the current no-op scaffold."""
@@ -93,11 +97,11 @@ class PipelineOrchestrator:
         """Execute the no-op stage pipeline with explicit transitions."""
         report = RunReport()
 
-        links = self._seed_ingest(payload)
+        ingested = self._seed_ingest(payload)
         report.stage_history.append("seed_ingest")
-        report.transition_snapshots["seed_ingest"] = links
+        report.transition_snapshots["seed_ingest"] = [item["source_link"] for item in ingested]
 
-        records = self._discovery(links)
+        records = self._discovery(payload, ingested)
         report.stage_history.append("discovery")
         report.transition_snapshots["discovery"] = [r.status for r in records]
 
