@@ -30,7 +30,7 @@
 4. `P1-04` Implement `pdf_download_skill` [DONE]
 - Acceptance criteria: verified PDFs stored under deterministic names
 
-5. `P1-05` Implement `metadata_bibtex_skill`
+5. `P1-05` Implement `metadata_bibtex_skill` [DONE]
 - Acceptance criteria: valid deduplicated BibTeX keys produced
 
 ## P2 - Summaries and Exports

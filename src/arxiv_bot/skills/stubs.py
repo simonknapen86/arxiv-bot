@@ -3,6 +3,9 @@ from arxiv_bot.skills.discovery import discovery_skill as implemented_discovery_
 from arxiv_bot.skills.existence_verification import (
     existence_verification_skill as implemented_existence_verification_skill,
 )
+from arxiv_bot.skills.metadata_bibtex import (
+    metadata_bibtex_skill as implemented_metadata_bibtex_skill,
+)
 from arxiv_bot.skills.pdf_download import pdf_download_skill as implemented_pdf_download_skill
 from arxiv_bot.skills.seed_ingest import seed_ingest_skill as implemented_seed_ingest_skill
 
@@ -29,8 +32,8 @@ def pdf_download_skill(records: list[PaperRecord]) -> list[PaperRecord]:
 
 
 def metadata_bibtex_skill(records: list[PaperRecord]) -> list[PaperRecord]:
-    """Return records unchanged as a placeholder metadata/BibTeX step."""
-    return records
+    """Delegate metadata/BibTeX generation to the concrete implementation."""
+    return implemented_metadata_bibtex_skill(records, use_inspire=False)
 
 
 def paper_summary_skill(records: list[PaperRecord]) -> list[PaperRecord]:

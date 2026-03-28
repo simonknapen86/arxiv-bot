@@ -10,6 +10,7 @@ ALLOWED_STATUSES = {
     "discovered",
     "verified",
     "downloaded",
+    "metadata_enriched",
     "summarized",
     "exported",
 }

@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 from arxiv_bot.models import PaperRecord, PipelineInput
 from arxiv_bot.skills.discovery import discovery_skill
 from arxiv_bot.skills.existence_verification import existence_verification_skill
+from arxiv_bot.skills.metadata_bibtex import metadata_bibtex_skill
 from arxiv_bot.skills.pdf_download import pdf_download_skill
 from arxiv_bot.skills.seed_ingest import seed_ingest_skill
 
@@ -61,8 +62,8 @@ class PipelineOrchestrator:
         return b"%PDF-1.4\n% scaffold file\n1 0 obj\n<<>>\nendobj\ntrailer\n<<>>\n%%EOF\n"
 
     def _metadata_bibtex(self, records: list[PaperRecord]) -> list[PaperRecord]:
-        """Pass records through the metadata and BibTeX stage placeholder."""
-        return records
+        """Populate citation keys and BibTeX entries for downloaded records."""
+        return metadata_bibtex_skill(records, use_inspire=False)
 
     def _paper_summary(self, records: list[PaperRecord]) -> list[PaperRecord]:
         """Attach a placeholder summary paragraph to each record."""
