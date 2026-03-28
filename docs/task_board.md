@@ -37,11 +37,17 @@
 1. `P2-01` Implement `paper_summary_skill` [DONE]
 - Acceptance criteria: one paragraph per paper generated
 
-2. `P2-02` Implement `literature_synthesis_skill`
+2. `P2-02` Implement `literature_synthesis_skill` [DONE]
 - Acceptance criteria: 1-2 page draft with citation keys
 
-3. `P2-03` Implement `export_skill`
+3. `P2-03` Implement `export_skill` [DONE]
 - Acceptance criteria: all required artifact files produced
+
+4. `P2-04` Add LLM-backed `paper_summary_skill`
+- Acceptance criteria: one model-generated paragraph per paper with source-grounded content
+
+5. `P2-05` Add LLM-backed `literature_synthesis_skill`
+- Acceptance criteria: model-generated 1-2 page synthesis with valid `\cite{...}` keys
 
 ## P3 - QA and Reliability
 1. `P3-01` Implement `qa_audit_skill`

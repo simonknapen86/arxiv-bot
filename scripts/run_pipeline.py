@@ -8,7 +8,10 @@ def main() -> None:
         seed_links=["https://arxiv.org/abs/2506.11191"],
         project_description="Example query",
     )
-    records = PipelineOrchestrator(use_fixture_pdf_fetcher=False).run(payload)
+    records = PipelineOrchestrator(
+        use_fixture_pdf_fetcher=False,
+        use_inspire_bibtex=True,
+    ).run(payload)
     print(f"Scaffold run complete. Records: {len(records)}")
 
 

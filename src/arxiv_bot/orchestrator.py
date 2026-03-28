@@ -4,7 +4,9 @@ from dataclasses import dataclass, field
 
 from arxiv_bot.models import PaperRecord, PipelineInput
 from arxiv_bot.skills.discovery import discovery_skill
+from arxiv_bot.skills.export import export_skill
 from arxiv_bot.skills.existence_verification import existence_verification_skill
+from arxiv_bot.skills.literature_synthesis import literature_synthesis_skill
 from arxiv_bot.skills.metadata_bibtex import metadata_bibtex_skill
 from arxiv_bot.skills.paper_summary import paper_summary_skill
 from arxiv_bot.skills.pdf_download import pdf_download_skill
@@ -22,8 +24,12 @@ class RunReport:
 class PipelineOrchestrator:
     """Coordinates stage execution across skill modules."""
 
-    def __init__(self, use_fixture_pdf_fetcher: bool = True) -> None:
-        """Initialize orchestrator stage order, run state, and PDF fetch mode."""
+    def __init__(
+        self,
+        use_fixture_pdf_fetcher: bool = True,
+        use_inspire_bibtex: bool = False,
+    ) -> None:
+        """Initialize orchestrator stage order, run state, and external I/O modes."""
         self.stage_names = [
             "seed_ingest",
             "discovery",
@@ -37,6 +43,7 @@ class PipelineOrchestrator:
         ]
         self.last_run_report: RunReport | None = None
         self.use_fixture_pdf_fetcher = use_fixture_pdf_fetcher
+        self.use_inspire_bibtex = use_inspire_bibtex
 
     def _seed_ingest(self, payload: PipelineInput) -> list[dict[str, str]]:
         """Normalize and classify seed links from pipeline input."""
@@ -67,24 +74,19 @@ class PipelineOrchestrator:
 
     def _metadata_bibtex(self, records: list[PaperRecord]) -> list[PaperRecord]:
         """Populate citation keys and BibTeX entries for downloaded records."""
-        return metadata_bibtex_skill(records, use_inspire=False)
+        return metadata_bibtex_skill(records, use_inspire=self.use_inspire_bibtex)
 
     def _paper_summary(self, records: list[PaperRecord]) -> list[PaperRecord]:
         """Attach one-paragraph summaries to each metadata-enriched record."""
         return paper_summary_skill(records)
 
-    def _literature_synthesis(self, records: list[PaperRecord]) -> str:
-        """Generate a placeholder synthesis string for the current run."""
-        return (
-            "Placeholder literature synthesis. "
-            f"Includes {len(records)} paper(s)."
-        )
+    def _literature_synthesis(self, payload: PipelineInput, records: list[PaperRecord]) -> str:
+        """Generate a TeX-ready synthesis summary from summarized paper records."""
+        return literature_synthesis_skill(records, project_description=payload.project_description)
 
-    def _export(self, records: list[PaperRecord]) -> list[PaperRecord]:
-        """Mark records as exported in the current no-op scaffold."""
-        for record in records:
-            record.status = "exported"
-        return records
+    def _export(self, records: list[PaperRecord], literature_synthesis_tex: str) -> list[PaperRecord]:
+        """Write output artifacts and mark records as exported."""
+        return export_skill(records, literature_synthesis_tex)
 
     def _qa_audit(self, records: list[PaperRecord]) -> None:
         """Ensure records exist and have reached the exported stage."""
@@ -122,11 +124,11 @@ class PipelineOrchestrator:
         report.stage_history.append("paper_summary")
         report.transition_snapshots["paper_summary"] = [r.status for r in records]
 
-        report.literature_synthesis = self._literature_synthesis(records)
+        report.literature_synthesis = self._literature_synthesis(payload, records)
         report.stage_history.append("literature_synthesis")
         report.transition_snapshots["literature_synthesis"] = [r.status for r in records]
 
-        records = self._export(records)
+        records = self._export(records, report.literature_synthesis)
         report.stage_history.append("export")
         report.transition_snapshots["export"] = [r.status for r in records]
 

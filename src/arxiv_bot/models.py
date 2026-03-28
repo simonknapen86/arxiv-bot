@@ -4,6 +4,7 @@ from typing import Optional
 
 @dataclass
 class PipelineInput:
+    """Describe the high-level request that drives one literature pipeline run."""
     seed_links: list[str]
     project_description: str
     include_keywords: list[str] = field(default_factory=list)

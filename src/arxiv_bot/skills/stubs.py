@@ -1,10 +1,14 @@
 from arxiv_bot.models import PaperRecord
 from arxiv_bot.skills.discovery import discovery_skill as implemented_discovery_skill
+from arxiv_bot.skills.export import export_skill as implemented_export_skill
 from arxiv_bot.skills.existence_verification import (
     existence_verification_skill as implemented_existence_verification_skill,
 )
 from arxiv_bot.skills.metadata_bibtex import (
     metadata_bibtex_skill as implemented_metadata_bibtex_skill,
+)
+from arxiv_bot.skills.literature_synthesis import (
+    literature_synthesis_skill as implemented_literature_synthesis_skill,
 )
 from arxiv_bot.skills.paper_summary import paper_summary_skill as implemented_paper_summary_skill
 from arxiv_bot.skills.pdf_download import pdf_download_skill as implemented_pdf_download_skill
@@ -43,12 +47,13 @@ def paper_summary_skill(records: list[PaperRecord]) -> list[PaperRecord]:
 
 
 def literature_synthesis_skill(records: list[PaperRecord]) -> str:
-    """Return an empty string as a placeholder synthesis output."""
-    return ""
+    """Delegate synthesis generation to the concrete implementation."""
+    return implemented_literature_synthesis_skill(records)
 
 
 def export_skill(records: list[PaperRecord]) -> None:
-    """Perform no action as a placeholder export step."""
+    """Delegate export generation to the concrete implementation."""
+    implemented_export_skill(records, "")
     return None
 
 

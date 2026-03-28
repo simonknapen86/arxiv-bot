@@ -25,6 +25,7 @@ def test_run_returns_record_per_seed_link() -> None:
 
 
 def test_run_tracks_stage_history_end_to_end() -> None:
+    """Track stage history and expose synthesis text in the final run report."""
     payload = PipelineInput(
         seed_links=["https://arxiv.org/abs/1706.03762"],
         project_description="Test",
@@ -36,3 +37,4 @@ def test_run_tracks_stage_history_end_to_end() -> None:
     assert orchestrator.last_run_report.stage_history == orchestrator.stage_names
     assert orchestrator.last_run_report.transition_snapshots["discovery"] == ["discovered"]
     assert orchestrator.last_run_report.transition_snapshots["export"] == ["exported"]
+    assert "\\section*{Literature Synthesis}" in orchestrator.last_run_report.literature_synthesis
