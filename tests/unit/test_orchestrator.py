@@ -16,3 +16,19 @@ def test_run_returns_record_per_seed_link() -> None:
     records = PipelineOrchestrator().run(payload)
     assert len(records) == 2
     assert records[0].source_link == "a"
+    assert all(record.status == "exported" for record in records)
+    assert all(record.verified for record in records)
+
+
+def test_run_tracks_stage_history_end_to_end() -> None:
+    payload = PipelineInput(
+        seed_links=["https://arxiv.org/abs/1706.03762"],
+        project_description="Test",
+    )
+    orchestrator = PipelineOrchestrator()
+    orchestrator.run(payload)
+
+    assert orchestrator.last_run_report is not None
+    assert orchestrator.last_run_report.stage_history == orchestrator.stage_names
+    assert orchestrator.last_run_report.transition_snapshots["discovery"] == ["discovered"]
+    assert orchestrator.last_run_report.transition_snapshots["export"] == ["exported"]

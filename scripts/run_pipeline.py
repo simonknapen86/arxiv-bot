@@ -3,6 +3,7 @@ from arxiv_bot.orchestrator import PipelineOrchestrator
 
 
 def main() -> None:
+    """Run a minimal scaffold pipeline invocation from the command line."""
     payload = PipelineInput(
         seed_links=["https://arxiv.org/abs/1706.03762"],
         project_description="Example query",

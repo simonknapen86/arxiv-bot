@@ -16,18 +16,21 @@ ALLOWED_STATUSES = {
 
 
 def _require_non_empty_string(value: Any, field_name: str) -> str:
+    """Validate and normalize a required non-empty string value."""
     if not isinstance(value, str) or not value.strip():
         raise ValueError(f"{field_name} must be a non-empty string")
     return value.strip()
 
 
 def _require_string_list(value: Any, field_name: str) -> list[str]:
+    """Validate a list of strings and return stripped non-empty items."""
     if not isinstance(value, list) or not all(isinstance(item, str) for item in value):
         raise ValueError(f"{field_name} must be a list of strings")
     return [item.strip() for item in value if item.strip()]
 
 
 def _optional_string(value: Any, field_name: str) -> str | None:
+    """Validate an optional string and return None for empty input."""
     if value is None:
         return None
     if not isinstance(value, str):
@@ -37,6 +40,7 @@ def _optional_string(value: Any, field_name: str) -> str | None:
 
 
 def validate_pipeline_input(data: dict[str, Any]) -> PipelineInput:
+    """Validate raw input payload and build a PipelineInput model."""
     if not isinstance(data, dict):
         raise ValueError("pipeline input must be an object")
 
@@ -60,6 +64,7 @@ def validate_pipeline_input(data: dict[str, Any]) -> PipelineInput:
 
 
 def validate_paper_record(data: dict[str, Any]) -> PaperRecord:
+    """Validate raw paper payload and build a PaperRecord model."""
     if not isinstance(data, dict):
         raise ValueError("paper record must be an object")
 

@@ -9,7 +9,7 @@
 - Owner: Contracts
 - Acceptance criteria: schema validation tests pass for fixtures
 
-3. `P0-03` Implement run orchestrator state machine
+3. `P0-03` Implement run orchestrator state machine [DONE]
 - Owner: Pipeline
 - Acceptance criteria: can execute no-op stages end-to-end
 

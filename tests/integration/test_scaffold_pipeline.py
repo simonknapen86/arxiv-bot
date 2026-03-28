@@ -9,4 +9,5 @@ def test_scaffold_pipeline_integration() -> None:
     )
     records = PipelineOrchestrator().run(payload)
     assert records
-    assert records[0].status == "discovered"
+    assert all(record.status == "exported" for record in records)
+    assert all(record.summary_paragraph for record in records)
