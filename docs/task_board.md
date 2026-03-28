@@ -24,7 +24,7 @@
 2. `P1-02` Implement `discovery_skill` [DONE]
 - Acceptance criteria: returns ranked candidate paper list
 
-3. `P1-03` Implement `existence_verification_skill`
+3. `P1-03` Implement `existence_verification_skill` [DONE]
 - Acceptance criteria: metadata + resolvable source check enforced
 
 4. `P1-04` Implement `pdf_download_skill`

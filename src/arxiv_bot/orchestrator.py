@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 
 from arxiv_bot.models import PaperRecord, PipelineInput
 from arxiv_bot.skills.discovery import discovery_skill
+from arxiv_bot.skills.existence_verification import existence_verification_skill
 from arxiv_bot.skills.seed_ingest import seed_ingest_skill
 
 
@@ -46,11 +47,8 @@ class PipelineOrchestrator:
         )
 
     def _existence_verification(self, records: list[PaperRecord]) -> list[PaperRecord]:
-        """Mark all records as verified in the current no-op scaffold."""
-        for record in records:
-            record.verified = True
-            record.status = "verified"
-        return records
+        """Verify discovered records and keep only records that pass checks."""
+        return existence_verification_skill(records)
 
     def _pdf_download(self, records: list[PaperRecord]) -> list[PaperRecord]:
         """Mark records as downloaded in the current no-op scaffold."""

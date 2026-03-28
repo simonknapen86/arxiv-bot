@@ -1,5 +1,8 @@
 from arxiv_bot.models import PaperRecord
 from arxiv_bot.skills.discovery import discovery_skill as implemented_discovery_skill
+from arxiv_bot.skills.existence_verification import (
+    existence_verification_skill as implemented_existence_verification_skill,
+)
 from arxiv_bot.skills.seed_ingest import seed_ingest_skill as implemented_seed_ingest_skill
 
 
@@ -15,8 +18,8 @@ def discovery_skill(links: list[str]) -> list[PaperRecord]:
 
 
 def existence_verification_skill(records: list[PaperRecord]) -> list[PaperRecord]:
-    """Return records unchanged as a placeholder verification step."""
-    return records
+    """Delegate verification to the concrete existence-verification implementation."""
+    return implemented_existence_verification_skill(records)
 
 
 def pdf_download_skill(records: list[PaperRecord]) -> list[PaperRecord]:

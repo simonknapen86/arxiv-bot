@@ -9,13 +9,17 @@ def test_stage_names_present() -> None:
 
 
 def test_run_returns_record_per_seed_link() -> None:
+    """Run the pipeline on valid seed links and return one record per unique seed."""
     payload = PipelineInput(
-        seed_links=["a", "b"],
+        seed_links=[
+            "https://arxiv.org/abs/1706.03762",
+            "https://doi.org/10.1038/nature14539",
+        ],
         project_description="Test",
     )
     records = PipelineOrchestrator().run(payload)
     assert len(records) == 2
-    assert records[0].source_link == "a"
+    assert records[0].source_link in payload.seed_links
     assert all(record.status == "exported" for record in records)
     assert all(record.verified for record in records)
 
