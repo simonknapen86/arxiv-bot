@@ -18,7 +18,7 @@
 - Acceptance criteria: migration + CRUD tests pass
 
 ## P1 - Core Skills
-1. `P1-01` Implement `seed_ingest_skill`
+1. `P1-01` Implement `seed_ingest_skill` [DONE]
 - Acceptance criteria: seed links normalized into identifiers
 
 2. `P1-02` Implement `discovery_skill`

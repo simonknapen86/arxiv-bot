@@ -1,9 +1,10 @@
 from arxiv_bot.models import PaperRecord
+from arxiv_bot.skills.seed_ingest import seed_ingest_skill as implemented_seed_ingest_skill
 
 
 def seed_ingest_skill(seed_links: list[str]) -> list[str]:
-    """Return seed links unchanged as a placeholder ingest implementation."""
-    return seed_links
+    """Delegate seed ingestion to the concrete seed ingest implementation."""
+    return [item["source_link"] for item in implemented_seed_ingest_skill(seed_links)]
 
 
 def discovery_skill(links: list[str]) -> list[PaperRecord]:

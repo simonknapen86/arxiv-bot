@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from arxiv_bot.models import PaperRecord, PipelineInput
+from arxiv_bot.skills.seed_ingest import seed_ingest_skill
 
 
 @dataclass
@@ -33,7 +34,8 @@ class PipelineOrchestrator:
 
     def _seed_ingest(self, payload: PipelineInput) -> list[str]:
         """Normalize seed links from pipeline input."""
-        return [link.strip() for link in payload.seed_links if link.strip()]
+        ingested = seed_ingest_skill(payload.seed_links)
+        return [item["source_link"] for item in ingested]
 
     def _discovery(self, links: list[str]) -> list[PaperRecord]:
         """Create discovered paper records from normalized links."""
