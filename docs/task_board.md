@@ -27,7 +27,7 @@
 3. `P1-03` Implement `existence_verification_skill` [DONE]
 - Acceptance criteria: metadata + resolvable source check enforced
 
-4. `P1-04` Implement `pdf_download_skill`
+4. `P1-04` Implement `pdf_download_skill` [DONE]
 - Acceptance criteria: verified PDFs stored under deterministic names
 
 5. `P1-05` Implement `metadata_bibtex_skill`

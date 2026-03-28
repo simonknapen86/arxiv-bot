@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 from arxiv_bot.models import PaperRecord, PipelineInput
 from arxiv_bot.skills.discovery import discovery_skill
 from arxiv_bot.skills.existence_verification import existence_verification_skill
+from arxiv_bot.skills.pdf_download import pdf_download_skill
 from arxiv_bot.skills.seed_ingest import seed_ingest_skill
 
 
@@ -51,10 +52,13 @@ class PipelineOrchestrator:
         return existence_verification_skill(records)
 
     def _pdf_download(self, records: list[PaperRecord]) -> list[PaperRecord]:
-        """Mark records as downloaded in the current no-op scaffold."""
-        for record in records:
-            record.status = "downloaded"
-        return records
+        """Download verified PDFs using a deterministic test-safe fetcher."""
+        return pdf_download_skill(records, fetch_pdf=self._fixture_pdf_fetcher)
+
+    def _fixture_pdf_fetcher(self, pdf_url: str) -> bytes:
+        """Return minimal deterministic PDF bytes for non-network scaffold runs."""
+        _ = pdf_url
+        return b"%PDF-1.4\n% scaffold file\n1 0 obj\n<<>>\nendobj\ntrailer\n<<>>\n%%EOF\n"
 
     def _metadata_bibtex(self, records: list[PaperRecord]) -> list[PaperRecord]:
         """Pass records through the metadata and BibTeX stage placeholder."""
