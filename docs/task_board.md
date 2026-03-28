@@ -5,7 +5,7 @@
 - Owner: Core
 - Acceptance criteria: project installs, pytest runs
 
-2. `P0-02` Define input and paper record schemas
+2. `P0-02` Define input and paper record schemas [DONE]
 - Owner: Contracts
 - Acceptance criteria: schema validation tests pass for fixtures
 
