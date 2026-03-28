@@ -6,6 +6,7 @@ from arxiv_bot.models import PaperRecord, PipelineInput
 from arxiv_bot.skills.discovery import discovery_skill
 from arxiv_bot.skills.existence_verification import existence_verification_skill
 from arxiv_bot.skills.metadata_bibtex import metadata_bibtex_skill
+from arxiv_bot.skills.paper_summary import paper_summary_skill
 from arxiv_bot.skills.pdf_download import pdf_download_skill
 from arxiv_bot.skills.seed_ingest import seed_ingest_skill
 
@@ -21,8 +22,8 @@ class RunReport:
 class PipelineOrchestrator:
     """Coordinates stage execution across skill modules."""
 
-    def __init__(self) -> None:
-        """Initialize orchestrator stage order and run report state."""
+    def __init__(self, use_fixture_pdf_fetcher: bool = True) -> None:
+        """Initialize orchestrator stage order, run state, and PDF fetch mode."""
         self.stage_names = [
             "seed_ingest",
             "discovery",
@@ -35,6 +36,7 @@ class PipelineOrchestrator:
             "qa_audit",
         ]
         self.last_run_report: RunReport | None = None
+        self.use_fixture_pdf_fetcher = use_fixture_pdf_fetcher
 
     def _seed_ingest(self, payload: PipelineInput) -> list[dict[str, str]]:
         """Normalize and classify seed links from pipeline input."""
@@ -53,8 +55,10 @@ class PipelineOrchestrator:
         return existence_verification_skill(records)
 
     def _pdf_download(self, records: list[PaperRecord]) -> list[PaperRecord]:
-        """Download verified PDFs using a deterministic test-safe fetcher."""
-        return pdf_download_skill(records, fetch_pdf=self._fixture_pdf_fetcher)
+        """Download verified PDFs using fixture or network fetcher per mode."""
+        if self.use_fixture_pdf_fetcher:
+            return pdf_download_skill(records, fetch_pdf=self._fixture_pdf_fetcher)
+        return pdf_download_skill(records)
 
     def _fixture_pdf_fetcher(self, pdf_url: str) -> bytes:
         """Return minimal deterministic PDF bytes for non-network scaffold runs."""
@@ -66,14 +70,8 @@ class PipelineOrchestrator:
         return metadata_bibtex_skill(records, use_inspire=False)
 
     def _paper_summary(self, records: list[PaperRecord]) -> list[PaperRecord]:
-        """Attach a placeholder summary paragraph to each record."""
-        for record in records:
-            record.summary_paragraph = (
-                f"Placeholder summary for {record.source_link}. "
-                "Replace with model-based summarization."
-            )
-            record.status = "summarized"
-        return records
+        """Attach one-paragraph summaries to each metadata-enriched record."""
+        return paper_summary_skill(records)
 
     def _literature_synthesis(self, records: list[PaperRecord]) -> str:
         """Generate a placeholder synthesis string for the current run."""

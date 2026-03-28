@@ -6,6 +6,7 @@ from arxiv_bot.skills.existence_verification import (
 from arxiv_bot.skills.metadata_bibtex import (
     metadata_bibtex_skill as implemented_metadata_bibtex_skill,
 )
+from arxiv_bot.skills.paper_summary import paper_summary_skill as implemented_paper_summary_skill
 from arxiv_bot.skills.pdf_download import pdf_download_skill as implemented_pdf_download_skill
 from arxiv_bot.skills.seed_ingest import seed_ingest_skill as implemented_seed_ingest_skill
 
@@ -37,8 +38,8 @@ def metadata_bibtex_skill(records: list[PaperRecord]) -> list[PaperRecord]:
 
 
 def paper_summary_skill(records: list[PaperRecord]) -> list[PaperRecord]:
-    """Return records unchanged as a placeholder summary step."""
-    return records
+    """Delegate per-paper summary generation to the concrete implementation."""
+    return implemented_paper_summary_skill(records)
 
 
 def literature_synthesis_skill(records: list[PaperRecord]) -> str:

@@ -34,7 +34,7 @@
 - Acceptance criteria: valid deduplicated BibTeX keys produced
 
 ## P2 - Summaries and Exports
-1. `P2-01` Implement `paper_summary_skill`
+1. `P2-01` Implement `paper_summary_skill` [DONE]
 - Acceptance criteria: one paragraph per paper generated
 
 2. `P2-02` Implement `literature_synthesis_skill`
