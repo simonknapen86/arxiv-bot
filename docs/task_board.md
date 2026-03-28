@@ -13,7 +13,7 @@
 - Owner: Pipeline
 - Acceptance criteria: can execute no-op stages end-to-end
 
-4. `P0-04` Set up SQLite storage (`papers`, `runs`, indexes)
+4. `P0-04` Set up SQLite storage (`papers`, `runs`, indexes) [DONE]
 - Owner: Storage
 - Acceptance criteria: migration + CRUD tests pass
 
