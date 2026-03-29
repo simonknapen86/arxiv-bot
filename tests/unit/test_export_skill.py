@@ -10,6 +10,8 @@ def test_export_skill_writes_required_artifacts(tmp_path: Path) -> None:
         PaperRecord(
             source_link="https://arxiv.org/abs/1706.03762",
             title="Attention Is All You Need",
+            authors=["Ashish Vaswani", "Noam Shazeer"],
+            arxiv_id="1706.03762",
             bibtex_key="vaswani2017attention",
             bibtex_entry="@article{vaswani2017attention,\\n  title={Attention Is All You Need}\\n}",
             summary_paragraph="A summary paragraph.",
@@ -34,6 +36,8 @@ def test_export_skill_writes_required_artifacts(tmp_path: Path) -> None:
     assert "\\documentclass[11pt]{article}" in summary_text
     assert "\\begin{document}" in summary_text
     assert "\\cite{vaswani2017attention}" in summary_text
+    assert "Ashish Vaswani, Noam Shazeer" in summary_text
+    assert "\\href{https://arxiv.org/abs/1706.03762}{arXiv:1706.03762}" in summary_text
     assert "\\bibliography{references}" in summary_text
     assert "\\section*{Literature Synthesis}" in review_text
     assert "\\documentclass[11pt]{article}" in review_text
@@ -54,3 +58,4 @@ def test_export_skill_handles_missing_optional_fields(tmp_path: Path) -> None:
     export_skill(records, "", artifacts_dir=tmp_path)
     summaries = (tmp_path / "paper_summaries.tex").read_text(encoding="utf-8")
     assert "Summary unavailable." in summaries
+    assert "arXiv:N/A" in summaries

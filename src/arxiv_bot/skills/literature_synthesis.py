@@ -110,7 +110,9 @@ def _synthesis_prompt(records: list[PaperRecord], project_description: str = "")
     return (
         "Write a 1-2 page TeX-ready literature synthesis with a section header "
         "\\section*{Literature Synthesis}. Include each cite key at least once using \\cite{...}. "
-        "Do not invent papers beyond the provided list.\n"
+        "Do not invent papers beyond the provided list. Return raw LaTeX text only, with no markdown "
+        "fences or backticks, and escape literal special characters such as %, &, _, #, $, {, and } "
+        "unless they are part of valid LaTeX commands.\n"
         f"Project description: {project_description or 'N/A'}\n"
         f"Required cite keys: {', '.join(cite_keys)}\n"
         "Paper details:\n"

@@ -72,6 +72,8 @@ def _summary_prompt(record: PaperRecord, paper_text: str) -> str:
     return (
         "Write exactly one concise paragraph summarizing the paper for a literature review. "
         "Use only the provided metadata and extracted PDF text, and avoid fabricating results. "
+        "Output must be LaTeX-safe plain text (no markdown code fences), and escape literal "
+        "special characters such as %, &, _, #, $, {, and } unless used as valid LaTeX syntax. "
         f"Title: {record.title or 'Unknown'}. "
         f"Source: {record.source_link}. "
         f"Local PDF path: {record.local_pdf_path or 'N/A'}. "

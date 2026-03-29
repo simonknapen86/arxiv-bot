@@ -85,6 +85,7 @@ def test_metadata_bibtex_uses_inspire_entry_when_available() -> None:
     assert enriched[0].bibtex_key == "Vaswani:2017"
     assert enriched[0].bibtex_entry is not None
     assert "Attention Is All You Need" in enriched[0].bibtex_entry
+    assert enriched[0].title == "Attention Is All You Need"
 
 
 def test_metadata_bibtex_falls_back_when_inspire_invalid() -> None:
@@ -106,3 +107,26 @@ def test_metadata_bibtex_falls_back_when_inspire_invalid() -> None:
     enriched = metadata_bibtex_skill(records, use_inspire=True, inspire_client=FakeInspireClient())
     assert enriched[0].bibtex_entry is not None
     assert enriched[0].bibtex_entry.startswith("@article{")
+
+
+def test_metadata_bibtex_populates_authors_from_inspire_entry() -> None:
+    """Populate record author list when INSPIRE BibTeX includes authors."""
+
+    class FakeInspireClient:
+        """Return BibTeX with multi-author field for metadata propagation tests."""
+
+        def fetch_bibtex(self, _: PaperRecord) -> str | None:
+            """Return deterministic BibTeX containing title/author/year fields."""
+            return (
+                "@article{Gori:2025jzu,\n"
+                '  author = "Gori, Stefania and Knapen, Simon and Lin, Tongyan",\n'
+                "  title = {Spin-dependent scattering of sub-GeV dark matter},\n"
+                "  year = {2025}\n"
+                "}"
+            )
+
+    records = [PaperRecord(source_link="https://arxiv.org/abs/2506.11191", arxiv_id="2506.11191")]
+    enriched = metadata_bibtex_skill(records, use_inspire=True, inspire_client=FakeInspireClient())
+    assert enriched[0].authors == ["Gori, Stefania", "Knapen, Simon", "Lin, Tongyan"]
+    assert enriched[0].title == "Spin-dependent scattering of sub-GeV dark matter"
+    assert enriched[0].year == 2025

@@ -5,6 +5,26 @@ from pathlib import Path
 from arxiv_bot.models import PaperRecord
 
 
+def _escape_latex(text: str) -> str:
+    """Escape common LaTeX special characters in free-form text."""
+    replacements = {
+        "\\": r"\textbackslash{}",
+        "&": r"\&",
+        "%": r"\%",
+        "$": r"\$",
+        "#": r"\#",
+        "_": r"\_",
+        "{": r"\{",
+        "}": r"\}",
+        "~": r"\textasciitilde{}",
+        "^": r"\textasciicircum{}",
+    }
+    escaped = text
+    for old, new in replacements.items():
+        escaped = escaped.replace(old, new)
+    return escaped
+
+
 def _write_text(path: Path, content: str) -> None:
     """Write UTF-8 text content to disk, creating parent directories."""
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -25,9 +45,16 @@ def _paper_summaries_tex(records: list[PaperRecord]) -> str:
     sections: list[str] = ["\\section*{Paper Summaries}"]
     for index, record in enumerate(records, start=1):
         cite = record.bibtex_key or f"paper{index}"
-        title = record.title.strip() or record.source_link
+        title = _escape_latex(record.title.strip() or record.source_link)
+        authors = _escape_latex(", ".join(record.authors) if record.authors else "Unknown")
+        if record.arxiv_id:
+            arxiv_id = _escape_latex(record.arxiv_id)
+            arxiv_link = f"\\href{{https://arxiv.org/abs/{record.arxiv_id}}}{{arXiv:{arxiv_id}}}"
+        else:
+            arxiv_link = "arXiv:N/A"
+        subsection_title = f"{title} | {authors} | {arxiv_link}"
         summary = record.summary_paragraph or "Summary unavailable."
-        sections.append(f"\\subsection*{{{title}}}")
+        sections.append(f"\\subsection*{{{subsection_title}}}")
         sections.append(f"{summary} \\cite{{{cite}}}.")
     return "\n\n".join(sections) + "\n"
 

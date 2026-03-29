@@ -95,6 +95,43 @@ def _looks_like_bibtex(entry: str) -> bool:
     return entry.lstrip().startswith("@") and "{" in entry and "}" in entry
 
 
+def _extract_bibtex_field(entry: str, field: str) -> str | None:
+    """Extract a BibTeX field value from a single entry string."""
+    normalized = entry.replace("\\n", "\n")
+    brace_pattern = rf"{field}\s*=\s*\{{(.*?)\}}\s*,?\s*(?:\n|$)"
+    quote_pattern = rf'{field}\s*=\s*"(.*?)"\s*,?\s*(?:\n|$)'
+
+    match = re.search(brace_pattern, normalized, flags=re.IGNORECASE | re.DOTALL)
+    if not match:
+        match = re.search(quote_pattern, normalized, flags=re.IGNORECASE | re.DOTALL)
+    if not match:
+        return None
+    value = match.group(1).strip()
+    while len(value) >= 2 and value.startswith("{") and value.endswith("}"):
+        value = value[1:-1].strip()
+    return value or None
+
+
+def _populate_record_from_bibtex(record: PaperRecord, entry: str) -> None:
+    """Populate record metadata fields from a BibTeX entry when available."""
+    title = _extract_bibtex_field(entry, "title")
+    if title:
+        record.title = title
+
+    author_field = _extract_bibtex_field(entry, "author")
+    if author_field:
+        parsed_authors = [a.strip() for a in author_field.split(" and ") if a.strip()]
+        if parsed_authors:
+            record.authors = parsed_authors
+
+    year_field = _extract_bibtex_field(entry, "year")
+    if year_field:
+        try:
+            record.year = int(re.sub(r"[^0-9]", "", year_field))
+        except ValueError:
+            pass
+
+
 def metadata_bibtex_skill(
     records: list[PaperRecord],
     use_inspire: bool = True,
@@ -115,14 +152,18 @@ def metadata_bibtex_skill(
             parsed_key = _extract_bibtex_key(inspire_entry) or _base_bibtex_key(record)
             final_key = _assign_unique_key(parsed_key, seen)
             record.bibtex_key = final_key
-            record.bibtex_entry = _rewrite_bibtex_key(inspire_entry, final_key)
+            rewritten_entry = _rewrite_bibtex_key(inspire_entry, final_key)
+            record.bibtex_entry = rewritten_entry
+            _populate_record_from_bibtex(record, rewritten_entry)
             record.status = "metadata_enriched"
             continue
 
         base_key = _base_bibtex_key(record)
         final_key = _assign_unique_key(base_key, seen)
         record.bibtex_key = final_key
-        record.bibtex_entry = _build_bibtex_entry(record)
+        fallback_entry = _build_bibtex_entry(record)
+        record.bibtex_entry = fallback_entry
+        _populate_record_from_bibtex(record, fallback_entry)
         record.status = "metadata_enriched"
 
     return records
