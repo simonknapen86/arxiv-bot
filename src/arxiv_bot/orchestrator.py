@@ -10,6 +10,7 @@ from arxiv_bot.skills.literature_synthesis import literature_synthesis_skill
 from arxiv_bot.skills.metadata_bibtex import metadata_bibtex_skill
 from arxiv_bot.skills.paper_summary import paper_summary_skill
 from arxiv_bot.skills.pdf_download import pdf_download_skill
+from arxiv_bot.skills.qa_audit import qa_audit_skill
 from arxiv_bot.skills.seed_ingest import seed_ingest_skill
 
 
@@ -93,12 +94,8 @@ class PipelineOrchestrator:
         return export_skill(records, literature_synthesis_tex)
 
     def _qa_audit(self, records: list[PaperRecord]) -> None:
-        """Ensure records exist and have reached the exported stage."""
-        if not records:
-            raise ValueError("qa_audit failed: no records to audit")
-        non_exported = [record.source_link for record in records if record.status != "exported"]
-        if non_exported:
-            raise ValueError(f"qa_audit failed: non-exported records found: {non_exported}")
+        """Run cross-artifact quality checks and raise on audit failures."""
+        qa_audit_skill(records)
 
     def run(self, payload: PipelineInput) -> list[PaperRecord]:
         """Execute the no-op stage pipeline with explicit transitions."""

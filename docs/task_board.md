@@ -50,7 +50,7 @@
 - Acceptance criteria: model-generated 1-2 page synthesis with valid `\cite{...}` keys
 
 ## P3 - QA and Reliability
-1. `P3-01` Implement `qa_audit_skill`
+1. `P3-01` Implement `qa_audit_skill` [DONE]
 - Acceptance criteria: citation and cross-artifact checks pass/fail clearly
 
 2. `P3-02` Add retry policies and error taxonomy

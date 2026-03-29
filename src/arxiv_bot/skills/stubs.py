@@ -12,6 +12,7 @@ from arxiv_bot.skills.literature_synthesis import (
 )
 from arxiv_bot.skills.paper_summary import paper_summary_skill as implemented_paper_summary_skill
 from arxiv_bot.skills.pdf_download import pdf_download_skill as implemented_pdf_download_skill
+from arxiv_bot.skills.qa_audit import qa_audit_skill as implemented_qa_audit_skill
 from arxiv_bot.skills.seed_ingest import seed_ingest_skill as implemented_seed_ingest_skill
 
 
@@ -58,5 +59,6 @@ def export_skill(records: list[PaperRecord]) -> None:
 
 
 def qa_audit_skill(records: list[PaperRecord]) -> bool:
-    """Return True as a placeholder QA result."""
+    """Delegate QA auditing to the concrete implementation."""
+    implemented_qa_audit_skill(records)
     return True
