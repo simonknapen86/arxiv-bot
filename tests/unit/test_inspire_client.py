@@ -49,3 +49,81 @@ def test_inspire_client_returns_none_when_not_found() -> None:
     client = FakeInspireClient()
     record = PaperRecord(source_link="https://example.org/paper", doi="10.1/abc")
     assert client.fetch_bibtex(record) is None
+
+
+def test_inspire_client_fetches_seed_abstract() -> None:
+    """Extract abstract text from a seed record metadata payload."""
+
+    class FakeInspireClient(InspireClient):
+        """Return deterministic JSON metadata for seed lookup."""
+
+        def _fetch_json(self, url: str) -> dict[str, object] | None:
+            """Return a seed payload for arXiv lookup URLs."""
+            if "/arxiv/1706.03762" in url:
+                return {
+                    "id": "12345",
+                    "metadata": {
+                        "abstracts": [{"value": "Transformer abstract text."}],
+                    },
+                }
+            return None
+
+    client = FakeInspireClient()
+    record = PaperRecord(source_link="https://arxiv.org/abs/1706.03762", arxiv_id="1706.03762")
+    assert client.fetch_abstract(record) == "Transformer abstract text."
+
+
+def test_inspire_client_fetches_related_citing_and_references() -> None:
+    """Collect both citing and referenced papers from INSPIRE payloads."""
+
+    class FakeInspireClient(InspireClient):
+        """Provide deterministic INSPIRE JSON responses for relation traversal."""
+
+        def _fetch_json(self, url: str) -> dict[str, object] | None:
+            """Return record and search payloads for related-paper fetching."""
+            if "/arxiv/1706.03762" in url:
+                return {
+                    "id": "12345",
+                    "metadata": {
+                        "references": [
+                            {"record": {"$ref": "https://inspirehep.net/api/literature/9001"}}
+                        ]
+                    },
+                }
+            if "/literature?" in url and "refersto+recid%3A12345" in url:
+                return {
+                    "hits": {
+                        "hits": [
+                            {
+                                "id": "8001",
+                                "metadata": {
+                                    "titles": [{"title": "Citing transformer paper"}],
+                                    "abstracts": [{"value": "Attention and transformer variants."}],
+                                    "arxiv_eprints": [{"value": "2101.00001"}],
+                                    "authors": [{"full_name": "A. Author"}],
+                                    "earliest_date": "2021-01-15",
+                                },
+                            }
+                        ]
+                    }
+                }
+            if "/literature/9001" in url:
+                return {
+                    "id": "9001",
+                    "metadata": {
+                        "titles": [{"title": "Referenced optimization paper"}],
+                        "abstracts": [{"value": "Optimization and training dynamics."}],
+                        "dois": [{"value": "10.1000/xyz"}],
+                        "authors": [{"full_name": "B. Author"}],
+                        "earliest_date": "2020-06-01",
+                    },
+                }
+            return None
+
+    client = FakeInspireClient()
+    seed = PaperRecord(source_link="https://arxiv.org/abs/1706.03762", arxiv_id="1706.03762")
+    related = client.fetch_related_papers(seed, max_citing=5, max_references=5)
+
+    assert len(related) == 2
+    assert any(record.arxiv_id == "2101.00001" for record in related)
+    assert any(record.doi == "10.1000/xyz" for record in related)

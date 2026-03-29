@@ -59,3 +59,24 @@ def test_export_skill_handles_missing_optional_fields(tmp_path: Path) -> None:
     summaries = (tmp_path / "paper_summaries.tex").read_text(encoding="utf-8")
     assert "Summary unavailable." in summaries
     assert "arXiv:N/A" in summaries
+
+
+def test_export_skill_escapes_summary_special_characters(tmp_path: Path) -> None:
+    """Escape summary characters that would otherwise break LaTeX compilation."""
+    records = [
+        PaperRecord(
+            source_link="https://arxiv.org/abs/1910.10716",
+            title="Target comparison",
+            arxiv_id="1910.10716",
+            bibtex_key="griffin2019target",
+            summary_paragraph="Compares CaWO_4 and Al_2O_3 channels with 5% error and L ⊗ S terms.",
+            status="summarized",
+        )
+    ]
+
+    export_skill(records, "", artifacts_dir=tmp_path)
+    summaries = (tmp_path / "paper_summaries.tex").read_text(encoding="utf-8")
+    assert "CaWO\\_4" in summaries
+    assert "Al\\_2O\\_3" in summaries
+    assert "5\\% error" in summaries
+    assert "L x S terms" in summaries

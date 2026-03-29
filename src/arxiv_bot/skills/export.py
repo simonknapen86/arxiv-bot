@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import re
+import unicodedata
 from pathlib import Path
 
 from arxiv_bot.models import PaperRecord
@@ -31,6 +33,54 @@ def _write_text(path: Path, content: str) -> None:
     path.write_text(content, encoding="utf-8")
 
 
+def _normalize_unicode_plain(text: str) -> str:
+    """Convert broad Unicode text into conservative ASCII prose."""
+    replacements = {
+        "⊗": " x ",
+        "Δ": "Delta ",
+        "≤": "<=",
+        "≥": ">=",
+        "−": "-",
+        "–": "-",
+        "—": "-",
+        "’": "'",
+        "“": '"',
+        "”": '"',
+        "ϕ": "phi",
+        "χ": "chi",
+        "∼": "~",
+    }
+    normalized = text
+    for source, target in replacements.items():
+        normalized = normalized.replace(source, target)
+    normalized = unicodedata.normalize("NFKD", normalized)
+    return normalized.encode("ascii", "ignore").decode("ascii")
+
+
+def _normalize_unicode_tex(text: str) -> str:
+    """Normalize Unicode in TeX body content to avoid inputenc hard failures."""
+    replacements = {
+        "⊗": r"$\otimes$",
+        "Δ": r"$\Delta$",
+        "≤": r"$\leq$",
+        "≥": r"$\geq$",
+        "−": "-",
+        "–": "-",
+        "—": "-",
+        "’": "'",
+        "“": '"',
+        "”": '"',
+        "ϕ": r"$\phi$",
+        "χ": r"$\chi$",
+        "∼": r"$\sim$",
+    }
+    normalized = text
+    for source, target in replacements.items():
+        normalized = normalized.replace(source, target)
+    normalized = unicodedata.normalize("NFKD", normalized)
+    return normalized.encode("ascii", "ignore").decode("ascii")
+
+
 def _references_bib(records: list[PaperRecord]) -> str:
     """Build a combined BibTeX document from record entries."""
     entries: list[str] = []
@@ -53,21 +103,30 @@ def _paper_summaries_tex(records: list[PaperRecord]) -> str:
         else:
             arxiv_link = "arXiv:N/A"
         subsection_title = f"{title} | {authors} | {arxiv_link}"
-        summary = record.summary_paragraph or "Summary unavailable."
+        summary = _sanitize_summary_text(record.summary_paragraph or "Summary unavailable.")
         sections.append(f"\\subsection*{{{subsection_title}}}")
         sections.append(f"{summary} \\cite{{{cite}}}.")
     return "\n\n".join(sections) + "\n"
 
 
+def _sanitize_summary_text(text: str) -> str:
+    """Normalize summary text to compile-safe plain TeX prose."""
+    cleaned = _strip_markdown_fences(text)
+    cleaned = re.sub(r"\\cite\{[^}]+\}", "", cleaned)
+    cleaned = _normalize_unicode_plain(cleaned)
+    cleaned = " ".join(cleaned.split())
+    return _escape_latex(cleaned)
+
+
 def _wrap_latex_document(body_tex: str) -> str:
     """Wrap TeX body content in a compilable LaTeX document preamble."""
-    body = _strip_markdown_fences(body_tex).strip() + "\n"
+    body = _normalize_unicode_tex(_strip_markdown_fences(body_tex)).strip() + "\n"
     return (
         "\\documentclass[11pt]{article}\n"
         "\\usepackage[T1]{fontenc}\n"
         "\\usepackage[utf8]{inputenc}\n"
         "\\usepackage[margin=1in]{geometry}\n"
-        "\\usepackage[hidelinks]{hyperref}\n"
+        "\\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}\n"
         "\\usepackage[numbers]{natbib}\n"
         "\\begin{document}\n\n"
         f"{body}\n"

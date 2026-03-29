@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from pathlib import Path
 from typing import Callable
 
@@ -19,7 +20,17 @@ def _infer_focus(record: PaperRecord) -> str:
 
 
 def _summary_paragraph(record: PaperRecord) -> str:
-    """Generate a single-paragraph summary for one paper record."""
+    """Generate a fallback one-paragraph summary from available record metadata."""
+    if record.abstract and record.abstract.strip():
+        cleaned = re.sub(r"\s+", " ", record.abstract.strip())
+        trimmed = cleaned[:900].rstrip()
+        if not trimmed.endswith("."):
+            trimmed += "."
+        return (
+            f"{trimmed} This fallback summary was derived from metadata-level abstract text "
+            f"for citation key {record.bibtex_key or 'TBD'}."
+        )
+
     focus = _infer_focus(record)
     source_note = "arXiv" if record.arxiv_id else "DOI" if record.doi else "source URL"
     confidence_note = (
@@ -29,11 +40,9 @@ def _summary_paragraph(record: PaperRecord) -> str:
     )
 
     return (
-        f"{focus} is treated as a relevant contribution based on the seeded discovery criteria and "
-        f"keyword ranking stage. The record is linked to a {source_note} identifier and assigned "
-        f"citation key {record.bibtex_key or 'TBD'} for downstream referencing. "
-        f"{confidence_note} This summary is a scaffold paragraph that will be replaced by a "
-        f"model-generated technical synopsis in a later stage."
+        f"{focus} was retained by the discovery and verification workflow as a relevant source. "
+        f"The record is linked to a {source_note} identifier and assigned citation key "
+        f"{record.bibtex_key or 'TBD'} for downstream referencing. {confidence_note}"
     )
 
 

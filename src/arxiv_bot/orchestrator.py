@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from pathlib import Path
 
 from arxiv_bot.models import PaperRecord, PipelineInput
 from arxiv_bot.skills.discovery import discovery_skill
@@ -30,6 +31,8 @@ class PipelineOrchestrator:
         self,
         use_fixture_pdf_fetcher: bool = True,
         use_inspire_bibtex: bool = False,
+        use_inspire_related_discovery: bool = False,
+        artifacts_dir: str | Path = "artifacts",
     ) -> None:
         """Initialize orchestrator stage order, run state, and external I/O modes."""
         self.stage_names = [
@@ -46,6 +49,8 @@ class PipelineOrchestrator:
         self.last_run_report: RunReport | None = None
         self.use_fixture_pdf_fetcher = use_fixture_pdf_fetcher
         self.use_inspire_bibtex = use_inspire_bibtex
+        self.use_inspire_related_discovery = use_inspire_related_discovery
+        self.artifacts_dir = Path(artifacts_dir)
 
     def _seed_ingest(self, payload: PipelineInput) -> list[dict[str, str]]:
         """Normalize and classify seed links from pipeline input."""
@@ -57,6 +62,9 @@ class PipelineOrchestrator:
             ingested,
             include_keywords=payload.include_keywords,
             exclude_keywords=payload.exclude_keywords,
+            expand_via_inspire=self.use_inspire_related_discovery,
+            min_relevance_score=payload.related_min_relevance_score,
+            min_keyword_overlap=payload.related_min_keyword_overlap,
         )
 
     def _existence_verification(self, records: list[PaperRecord]) -> list[PaperRecord]:
@@ -65,9 +73,10 @@ class PipelineOrchestrator:
 
     def _pdf_download(self, records: list[PaperRecord]) -> list[PaperRecord]:
         """Download verified PDFs using fixture or network fetcher per mode."""
+        papers_dir = self.artifacts_dir / "papers"
         if self.use_fixture_pdf_fetcher:
-            return pdf_download_skill(records, fetch_pdf=self._fixture_pdf_fetcher)
-        return pdf_download_skill(records)
+            return pdf_download_skill(records, output_dir=papers_dir, fetch_pdf=self._fixture_pdf_fetcher)
+        return pdf_download_skill(records, output_dir=papers_dir)
 
     def _fixture_pdf_fetcher(self, pdf_url: str) -> bytes:
         """Return minimal deterministic PDF bytes for non-network scaffold runs."""
@@ -92,11 +101,11 @@ class PipelineOrchestrator:
 
     def _export(self, records: list[PaperRecord], literature_synthesis_tex: str) -> list[PaperRecord]:
         """Write output artifacts and mark records as exported."""
-        return export_skill(records, literature_synthesis_tex)
+        return export_skill(records, literature_synthesis_tex, artifacts_dir=self.artifacts_dir)
 
     def _qa_audit(self, records: list[PaperRecord]) -> None:
         """Run cross-artifact quality checks and raise on audit failures."""
-        qa_audit_skill(records)
+        qa_audit_skill(records, artifacts_dir=self.artifacts_dir)
 
     def run(self, payload: PipelineInput) -> list[PaperRecord]:
         """Execute the no-op stage pipeline with explicit transitions."""
@@ -138,7 +147,7 @@ class PipelineOrchestrator:
         report.stage_history.append("qa_audit")
         report.transition_snapshots["qa_audit"] = [r.status for r in records]
 
-        write_run_manifest(records, stage_history=report.stage_history)
+        write_run_manifest(records, stage_history=report.stage_history, artifacts_dir=self.artifacts_dir)
 
         self.last_run_report = report
         return records

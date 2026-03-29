@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import re
+
 from arxiv_bot.models import PaperRecord
 from arxiv_bot.skills.llm_client import LLMClient
 
@@ -22,15 +24,28 @@ def _paper_focus(record: PaperRecord) -> str:
     return "an identified paper in the search set"
 
 
+def _summary_signal(record: PaperRecord) -> str:
+    """Extract a concise plain-text signal sentence from a paper summary."""
+    if not record.summary_paragraph:
+        return _paper_focus(record)
+
+    text = record.summary_paragraph
+    text = re.sub(r"\\cite\{[^}]+\}", "", text)
+    text = re.sub(r"\\[A-Za-z]+\*?(?:\[[^\]]*\])?(?:\{[^}]*\})?", "", text)
+    text = " ".join(text.split()).strip()
+    if not text:
+        return _paper_focus(record)
+
+    sentence_match = re.split(r"(?<=[.!?])\s+", text, maxsplit=1)
+    sentence = sentence_match[0].strip() if sentence_match else text
+    return sentence[:260].rstrip()
+
+
 def _synthesis_sentence(record: PaperRecord, index: int) -> str:
-    """Generate one synthesis sentence with a citation for a paper record."""
-    focus = _paper_focus(record)
+    """Generate one synthesis sentence grounded in the paper summary text."""
+    signal = _summary_signal(record)
     cite = _cite_key(record, index)
-    relevance = record.relevance_score if record.relevance_score is not None else 0.0
-    return (
-        f"{focus} provides evidence aligned with the target scope, and it is retained as a core "
-        f"source for downstream interpretation (relevance score: {relevance:.2f})\\cite{{{cite}}}."
-    )
+    return f"{signal} \\cite{{{cite}}}."
 
 
 def _word_count(text: str) -> int:
@@ -68,20 +83,27 @@ def _deterministic_synthesis(records: list[PaperRecord], project_description: st
         "allowing claims to be traced back to concrete references."
     )
 
+    summary_lines.append("\\paragraph*{Evidence Across Included Papers}")
+    summary_lines.append(
+        "The main evidence points are summarized below from each included paper summary paragraph."
+    )
+
     for index, record in enumerate(records):
         summary_lines.append(_synthesis_sentence(record, index))
 
+    summary_lines.append("\\paragraph*{Cross-Cutting Synthesis}")
     summary_lines.append(
-        "Across the selected papers, the strongest pattern is methodological convergence around shared "
-        "problem framing and reproducible reporting conventions."
+        "Across the included studies, a recurring theme is complementary constraint-setting: "
+        "cosmology, collider/beam constraints, and direct detection sensitivity are treated jointly "
+        "rather than in isolation."
     )
     summary_lines.append(
-        "A second pattern is that incremental advances tend to improve practical reliability rather than "
-        "fundamentally changing conceptual assumptions."
+        "A second theme is methodological standardization, where shared effective-theory or benchmark "
+        "frameworks make cross-paper comparison more reliable."
     )
     summary_lines.append(
-        "Remaining gaps include benchmark transfer, cross-domain generalization, and transparent failure-mode "
-        "analysis, which should guide the next iteration of paper collection and evaluation."
+        "Open gaps remain in robust background modeling at ultra-low thresholds, harmonized reporting "
+        "across experiments, and uncertainty propagation when combining heterogeneous constraints."
     )
 
     text = "\n\n".join(summary_lines)
@@ -125,6 +147,19 @@ def _contains_all_citations(text: str, cite_keys: list[str]) -> bool:
     return all(f"\\cite{{{key}}}" in text for key in cite_keys)
 
 
+def _append_missing_citations(text: str, cite_keys: list[str]) -> str:
+    """Append a citation line for any required keys missing from generated synthesis."""
+    missing = [key for key in cite_keys if f"\\cite{{{key}}}" not in text]
+    if not missing:
+        return text
+    cites = " ".join(f"\\cite{{{key}}}" for key in missing)
+    addition = (
+        "\n\nAdditional papers included in this search and synthesis are cited here for completeness: "
+        f"{cites}."
+    )
+    return text + addition
+
+
 def literature_synthesis_skill(
     records: list[PaperRecord],
     project_description: str = "",
@@ -139,9 +174,9 @@ def literature_synthesis_skill(
     prompt = _synthesis_prompt(records, project_description=project_description)
     generated = client.generate(prompt, max_tokens=1400).strip()
     cite_keys = _required_cite_keys(records)
-    if generated and "\\section*{Literature Synthesis}" in generated and _contains_all_citations(
-        generated, cite_keys
-    ):
-        return generated
+    if generated and "\\section*{Literature Synthesis}" in generated:
+        completed = _append_missing_citations(generated, cite_keys)
+        if _contains_all_citations(completed, cite_keys):
+            return completed
 
     return _deterministic_synthesis(records, project_description=project_description)

@@ -20,27 +20,32 @@ def test_e2e_fixture_regression_snapshot(tmp_path: Path, monkeypatch) -> None:
     fixture_root = Path(__file__).resolve().parents[1] / "fixtures"
     input_path = fixture_root / "corpus" / "transformers_minimal.json"
     snapshots_dir = fixture_root / "snapshots" / "transformers_minimal"
-    artifacts_dir = tmp_path / "artifacts"
-    pdf_dir = artifacts_dir / "papers"
+    artifacts_output_dir = tmp_path / "artifacts"
+    pdf_dir = artifacts_output_dir / "papers"
 
     def _pdf_download(records, output_dir: str | Path = "artifacts/papers", fetch_pdf=None):
         """Route pdf download output to the test-local artifacts directory."""
         _ = output_dir
         return real_pdf_download_skill(records, output_dir=pdf_dir, fetch_pdf=fetch_pdf)
 
-    def _export(records, literature_synthesis_tex, artifacts_dir_override: str | Path = "artifacts"):
+    def _export(records, literature_synthesis_tex, artifacts_dir: str | Path = "artifacts"):
         """Route export output to the test-local artifacts directory."""
-        _ = artifacts_dir_override
-        return real_export_skill(records, literature_synthesis_tex, artifacts_dir=artifacts_dir)
+        _ = artifacts_dir
+        return real_export_skill(records, literature_synthesis_tex, artifacts_dir=artifacts_output_dir)
 
-    def _manifest(records, stage_history, artifacts_dir_override: str | Path = "artifacts"):
+    def _manifest(records, stage_history, artifacts_dir: str | Path = "artifacts"):
         """Route run manifest output to the test-local artifacts directory."""
-        _ = artifacts_dir_override
-        return real_write_run_manifest(records, stage_history=stage_history, artifacts_dir=artifacts_dir)
+        _ = artifacts_dir
+        return real_write_run_manifest(
+            records,
+            stage_history=stage_history,
+            artifacts_dir=artifacts_output_dir,
+        )
 
-    def _qa_audit(records):
+    def _qa_audit(records, artifacts_dir: str | Path = "artifacts"):
         """Route QA audit checks to the test-local artifacts directory."""
-        real_qa_audit_skill(records, artifacts_dir=artifacts_dir)
+        _ = artifacts_dir
+        real_qa_audit_skill(records, artifacts_dir=artifacts_output_dir)
 
     def _empty_generate(self, prompt: str, max_tokens: int = 400) -> str:
         """Force deterministic fallback summaries instead of live model output."""
@@ -59,9 +64,9 @@ def test_e2e_fixture_regression_snapshot(tmp_path: Path, monkeypatch) -> None:
     assert records
     assert all(record.status == "exported" for record in records)
 
-    references_actual = (artifacts_dir / "references.bib").read_text(encoding="utf-8")
-    summaries_actual = (artifacts_dir / "paper_summaries.tex").read_text(encoding="utf-8")
-    review_actual = (artifacts_dir / "literature_review.tex").read_text(encoding="utf-8")
+    references_actual = (artifacts_output_dir / "references.bib").read_text(encoding="utf-8")
+    summaries_actual = (artifacts_output_dir / "paper_summaries.tex").read_text(encoding="utf-8")
+    review_actual = (artifacts_output_dir / "literature_review.tex").read_text(encoding="utf-8")
 
     references_expected = (snapshots_dir / "references.bib").read_text(encoding="utf-8")
     summaries_expected = (snapshots_dir / "paper_summaries.tex").read_text(encoding="utf-8")

@@ -11,6 +11,7 @@ def main() -> None:
     records = PipelineOrchestrator(
         use_fixture_pdf_fetcher=False,
         use_inspire_bibtex=True,
+        use_inspire_related_discovery=True,
     ).run(payload)
     print(f"Scaffold run complete. Records: {len(records)}")
 

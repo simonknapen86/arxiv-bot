@@ -79,3 +79,36 @@ def test_literature_synthesis_uses_llm_output_when_valid() -> None:
     synthesis = literature_synthesis_skill(records, use_llm=True, llm_client=FakeLLMClient())
     assert "A synthesized review text" in synthesis
     assert "\\cite{vaswani2017attention}" in synthesis
+
+
+def test_literature_synthesis_appends_missing_citations_for_llm_output() -> None:
+    """Append missing required citations instead of dropping to deterministic fallback."""
+
+    class FakeLLMClient:
+        """Return LLM text with section header but missing one required cite."""
+
+        def generate(self, prompt: str, max_tokens: int = 400) -> str:
+            """Return synthesis body containing only one citation."""
+            _ = prompt
+            _ = max_tokens
+            return (
+                "\\section*{Literature Synthesis}\n\n"
+                "A synthesized review text \\cite{vaswani2017attention}."
+            )
+
+    records = [
+        PaperRecord(
+            source_link="https://arxiv.org/abs/1706.03762",
+            title="Attention Is All You Need",
+            bibtex_key="vaswani2017attention",
+        ),
+        PaperRecord(
+            source_link="https://doi.org/10.1038/nature14539",
+            title="A DOI paper",
+            bibtex_key="doi2015paper",
+        ),
+    ]
+    synthesis = literature_synthesis_skill(records, use_llm=True, llm_client=FakeLLMClient())
+    assert "A synthesized review text" in synthesis
+    assert "\\cite{vaswani2017attention}" in synthesis
+    assert "\\cite{doi2015paper}" in synthesis

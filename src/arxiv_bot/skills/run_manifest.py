@@ -12,6 +12,7 @@ def _paper_manifest(record: PaperRecord) -> dict[str, object]:
     return {
         "source_link": record.source_link,
         "title": record.title,
+        "abstract": record.abstract,
         "authors": record.authors,
         "year": record.year,
         "doi": record.doi,
