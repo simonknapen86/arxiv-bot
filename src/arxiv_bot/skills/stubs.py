@@ -43,12 +43,12 @@ def metadata_bibtex_skill(records: list[PaperRecord]) -> list[PaperRecord]:
 
 def paper_summary_skill(records: list[PaperRecord]) -> list[PaperRecord]:
     """Delegate per-paper summary generation to the concrete implementation."""
-    return implemented_paper_summary_skill(records)
+    return implemented_paper_summary_skill(records, use_llm=False)
 
 
 def literature_synthesis_skill(records: list[PaperRecord]) -> str:
     """Delegate synthesis generation to the concrete implementation."""
-    return implemented_literature_synthesis_skill(records)
+    return implemented_literature_synthesis_skill(records, use_llm=False)
 
 
 def export_skill(records: list[PaperRecord]) -> None:

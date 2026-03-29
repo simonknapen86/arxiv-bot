@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from arxiv_bot.models import PaperRecord
+from arxiv_bot.skills.llm_client import LLMClient
 
 
 def _cite_key(record: PaperRecord, index: int) -> str:
@@ -37,10 +38,18 @@ def _word_count(text: str) -> int:
     return len([token for token in text.split() if token.strip()])
 
 
-def literature_synthesis_skill(records: list[PaperRecord], project_description: str = "") -> str:
-    """Build a TeX-ready 1-2 page literature synthesis with inline citations."""
+def _required_cite_keys(records: list[PaperRecord]) -> list[str]:
+    """Return required citation keys in deterministic order."""
+    keys: list[str] = []
+    for index, record in enumerate(records):
+        keys.append(_cite_key(record, index))
+    return keys
+
+
+def _deterministic_synthesis(records: list[PaperRecord], project_description: str = "") -> str:
+    """Build a deterministic TeX-ready synthesis with inline citations."""
     if not records:
-        return "\\section*{Literature Synthesis}\\nNo papers were available for synthesis."
+        return "\\section*{Literature Synthesis}\nNo papers were available for synthesis."
 
     summary_lines: list[str] = []
     summary_lines.append("\\section*{Literature Synthesis}")
@@ -75,14 +84,62 @@ def literature_synthesis_skill(records: list[PaperRecord], project_description: 
         "analysis, which should guide the next iteration of paper collection and evaluation."
     )
 
-    text = "\\n\\n".join(summary_lines)
+    text = "\n\n".join(summary_lines)
 
     while _word_count(text) < 320:
         text += (
-            "\\n\\n"
+            "\n\n"
             "Future passes should prioritize comparative ablation evidence, stronger external validation, "
             "and clearer reporting of data assumptions so that conclusions can be aggregated with higher "
             "confidence across studies."
         )
 
     return text
+
+
+def _synthesis_prompt(records: list[PaperRecord], project_description: str = "") -> str:
+    """Build a grounded LLM prompt for literature synthesis generation."""
+    cite_keys = _required_cite_keys(records)
+    paper_lines: list[str] = []
+    for index, record in enumerate(records):
+        paper_lines.append(
+            f"- Paper {index + 1}: title={record.title or 'Unknown'}, "
+            f"summary={record.summary_paragraph or 'N/A'}, cite_key={cite_keys[index]}"
+        )
+
+    return (
+        "Write a 1-2 page TeX-ready literature synthesis with a section header "
+        "\\section*{Literature Synthesis}. Include each cite key at least once using \\cite{...}. "
+        "Do not invent papers beyond the provided list.\n"
+        f"Project description: {project_description or 'N/A'}\n"
+        f"Required cite keys: {', '.join(cite_keys)}\n"
+        "Paper details:\n"
+        + "\n".join(paper_lines)
+    )
+
+
+def _contains_all_citations(text: str, cite_keys: list[str]) -> bool:
+    """Check whether every required citation key appears in TeX citation format."""
+    return all(f"\\cite{{{key}}}" in text for key in cite_keys)
+
+
+def literature_synthesis_skill(
+    records: list[PaperRecord],
+    project_description: str = "",
+    use_llm: bool = False,
+    llm_client: LLMClient | None = None,
+) -> str:
+    """Build a TeX-ready synthesis with optional LLM generation and safe fallback."""
+    if not use_llm:
+        return _deterministic_synthesis(records, project_description=project_description)
+
+    client = llm_client or LLMClient()
+    prompt = _synthesis_prompt(records, project_description=project_description)
+    generated = client.generate(prompt, max_tokens=1400).strip()
+    cite_keys = _required_cite_keys(records)
+    if generated and "\\section*{Literature Synthesis}" in generated and _contains_all_citations(
+        generated, cite_keys
+    ):
+        return generated
+
+    return _deterministic_synthesis(records, project_description=project_description)

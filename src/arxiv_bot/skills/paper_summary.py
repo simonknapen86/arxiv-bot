@@ -1,6 +1,10 @@
 from __future__ import annotations
 
+from pathlib import Path
+from typing import Callable
+
 from arxiv_bot.models import PaperRecord
+from arxiv_bot.skills.llm_client import LLMClient
 
 
 def _infer_focus(record: PaperRecord) -> str:
@@ -33,9 +37,66 @@ def _summary_paragraph(record: PaperRecord) -> str:
     )
 
 
-def paper_summary_skill(records: list[PaperRecord]) -> list[PaperRecord]:
-    """Populate one-paragraph summaries for each record and mark as summarized."""
+def _extract_pdf_text(pdf_path: str | None, max_chars: int = 12000) -> str:
+    """Extract text from a local PDF path for grounded summarization prompts."""
+    if not pdf_path:
+        return ""
+
+    path = Path(pdf_path)
+    if not path.exists():
+        return ""
+
+    try:
+        from pypdf import PdfReader  # type: ignore
+    except Exception:
+        return ""
+
+    try:
+        reader = PdfReader(str(path))
+        chunks: list[str] = []
+        for page in reader.pages:
+            text = page.extract_text() or ""
+            if text.strip():
+                chunks.append(text.strip())
+            if sum(len(chunk) for chunk in chunks) >= max_chars:
+                break
+        combined = "\n\n".join(chunks)
+        return combined[:max_chars]
+    except Exception:
+        return ""
+
+
+def _summary_prompt(record: PaperRecord, paper_text: str) -> str:
+    """Build a grounded prompt for LLM-based one-paragraph paper summarization."""
+    text_block = paper_text if paper_text.strip() else "No PDF text could be extracted."
+    return (
+        "Write exactly one concise paragraph summarizing the paper for a literature review. "
+        "Use only the provided metadata and extracted PDF text, and avoid fabricating results. "
+        f"Title: {record.title or 'Unknown'}. "
+        f"Source: {record.source_link}. "
+        f"Local PDF path: {record.local_pdf_path or 'N/A'}. "
+        f"arXiv: {record.arxiv_id or 'N/A'}. DOI: {record.doi or 'N/A'}. "
+        f"BibTeX key: {record.bibtex_key or 'TBD'}. "
+        "Extracted paper text begins below:\n"
+        f"{text_block}"
+    )
+
+
+def paper_summary_skill(
+    records: list[PaperRecord],
+    use_llm: bool = False,
+    llm_client: LLMClient | None = None,
+    pdf_text_extractor: Callable[[str | None], str] | None = None,
+) -> list[PaperRecord]:
+    """Populate one-paragraph summaries with optional LLM generation and safe fallback."""
+    client = llm_client or LLMClient()
+    extractor = pdf_text_extractor or _extract_pdf_text
+
     for record in records:
-        record.summary_paragraph = _summary_paragraph(record)
+        summary = ""
+        if use_llm:
+            paper_text = extractor(record.local_pdf_path)
+            summary = client.generate(_summary_prompt(record, paper_text), max_tokens=300).strip()
+        record.summary_paragraph = summary or _summary_paragraph(record)
         record.status = "summarized"
     return records

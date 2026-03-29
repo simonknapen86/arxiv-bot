@@ -78,11 +78,15 @@ class PipelineOrchestrator:
 
     def _paper_summary(self, records: list[PaperRecord]) -> list[PaperRecord]:
         """Attach one-paragraph summaries to each metadata-enriched record."""
-        return paper_summary_skill(records)
+        return paper_summary_skill(records, use_llm=True)
 
     def _literature_synthesis(self, payload: PipelineInput, records: list[PaperRecord]) -> str:
         """Generate a TeX-ready synthesis summary from summarized paper records."""
-        return literature_synthesis_skill(records, project_description=payload.project_description)
+        return literature_synthesis_skill(
+            records,
+            project_description=payload.project_description,
+            use_llm=True,
+        )
 
     def _export(self, records: list[PaperRecord], literature_synthesis_tex: str) -> list[PaperRecord]:
         """Write output artifacts and mark records as exported."""
