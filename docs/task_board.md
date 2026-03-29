@@ -46,7 +46,7 @@
 4. `P2-04` Add LLM-backed `paper_summary_skill` [DONE]
 - Acceptance criteria: one model-generated paragraph per paper with source-grounded content
 
-5. `P2-05` Add LLM-backed `literature_synthesis_skill`
+5. `P2-05` Add LLM-backed `literature_synthesis_skill` [DONE]
 - Acceptance criteria: model-generated 1-2 page synthesis with valid `\cite{...}` keys
 
 ## P3 - QA and Reliability
