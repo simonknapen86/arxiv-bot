@@ -60,7 +60,7 @@
 - Acceptance criteria: every run emits machine-readable manifest
 
 ## P4 - DevEx and CI
-1. `P4-01` Add lint/type/test CI workflow
+1. `P4-01` Add lint/type/test CI workflow [DONE]
 - Acceptance criteria: CI gate on PRs
 
 2. `P4-02` Add fixture-driven e2e regression suite
