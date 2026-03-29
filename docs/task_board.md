@@ -63,7 +63,7 @@
 1. `P4-01` Add lint/type/test CI workflow [DONE]
 - Acceptance criteria: CI gate on PRs
 
-2. `P4-02` Add fixture-driven e2e regression suite
+2. `P4-02` Add fixture-driven e2e regression suite [DONE]
 - Acceptance criteria: stable snapshots on fixture corpus
 
 3. `P4-03` Add runbook and usage examples

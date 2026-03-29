@@ -1,0 +1,9 @@
+{
+  "seed_links": [
+    "https://arxiv.org/abs/1706.03762",
+    "https://arxiv.org/abs/1810.04805"
+  ],
+  "project_description": "Survey transformer architectures and optimization techniques",
+  "include_keywords": ["transformer", "attention", "optimization"],
+  "exclude_keywords": ["biology"]
+}
