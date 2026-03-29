@@ -29,8 +29,15 @@ def test_export_skill_writes_required_artifacts(tmp_path: Path) -> None:
     assert review.exists()
 
     assert "@article{vaswani2017attention" in references.read_text(encoding="utf-8")
-    assert "\\cite{vaswani2017attention}" in summaries.read_text(encoding="utf-8")
-    assert "\\section*{Literature Synthesis}" in review.read_text(encoding="utf-8")
+    summary_text = summaries.read_text(encoding="utf-8")
+    review_text = review.read_text(encoding="utf-8")
+    assert "\\documentclass[11pt]{article}" in summary_text
+    assert "\\begin{document}" in summary_text
+    assert "\\cite{vaswani2017attention}" in summary_text
+    assert "\\bibliography{references}" in summary_text
+    assert "\\section*{Literature Synthesis}" in review_text
+    assert "\\documentclass[11pt]{article}" in review_text
+    assert "\\bibliography{references}" in review_text
     assert all(record.status == "exported" for record in exported)
 
 

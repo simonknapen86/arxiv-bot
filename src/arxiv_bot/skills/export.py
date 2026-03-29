@@ -32,6 +32,50 @@ def _paper_summaries_tex(records: list[PaperRecord]) -> str:
     return "\n\n".join(sections) + "\n"
 
 
+def _wrap_latex_document(body_tex: str) -> str:
+    """Wrap TeX body content in a compilable LaTeX document preamble."""
+    body = _strip_markdown_fences(body_tex).strip() + "\n"
+    return (
+        "\\documentclass[11pt]{article}\n"
+        "\\usepackage[T1]{fontenc}\n"
+        "\\usepackage[utf8]{inputenc}\n"
+        "\\usepackage[margin=1in]{geometry}\n"
+        "\\usepackage[hidelinks]{hyperref}\n"
+        "\\usepackage[numbers]{natbib}\n"
+        "\\begin{document}\n\n"
+        f"{body}\n"
+        "\\bibliographystyle{unsrtnat}\n"
+        "\\bibliography{references}\n"
+        "\\end{document}\n"
+    )
+
+
+def _strip_markdown_fences(text: str) -> str:
+    """Remove optional markdown code fences from model-generated TeX text."""
+    stripped = text.strip()
+    if stripped.startswith("```"):
+        lines = stripped.splitlines()
+        if lines and lines[0].startswith("```"):
+            lines = lines[1:]
+        if lines and lines[-1].strip().startswith("```"):
+            lines = lines[:-1]
+        stripped = "\n".join(lines)
+    return _strip_embedded_bibliography(stripped)
+
+
+def _strip_embedded_bibliography(text: str) -> str:
+    """Remove bibliography directives from body text to avoid duplicate footers."""
+    kept: list[str] = []
+    for line in text.splitlines():
+        normalized = line.strip().lower()
+        if normalized.startswith("\\bibliographystyle"):
+            continue
+        if normalized.startswith("\\bibliography"):
+            continue
+        kept.append(line)
+    return "\n".join(kept)
+
+
 def export_skill(
     records: list[PaperRecord],
     literature_synthesis_tex: str,
@@ -44,8 +88,8 @@ def export_skill(
     review_path = artifacts_path / "literature_review.tex"
 
     _write_text(references_path, _references_bib(records))
-    _write_text(summaries_path, _paper_summaries_tex(records))
-    _write_text(review_path, literature_synthesis_tex)
+    _write_text(summaries_path, _wrap_latex_document(_paper_summaries_tex(records)))
+    _write_text(review_path, _wrap_latex_document(literature_synthesis_tex))
 
     for record in records:
         record.status = "exported"
