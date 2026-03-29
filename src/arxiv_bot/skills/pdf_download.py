@@ -3,10 +3,13 @@ from __future__ import annotations
 import re
 from pathlib import Path
 from typing import Callable
+from urllib.error import HTTPError, URLError
 from urllib.parse import urlparse
 from urllib.request import urlopen
 
 from arxiv_bot.models import PaperRecord
+from arxiv_bot.pipeline.errors import PermanentPipelineError, TransientPipelineError
+from arxiv_bot.pipeline.retry import RetryPolicy, retry_call
 
 
 def _sanitize_token(value: str) -> str:
@@ -37,10 +40,30 @@ def _resolve_pdf_url(record: PaperRecord) -> str | None:
     return None
 
 
+def _is_retryable_download_error(error: Exception) -> bool:
+    """Return True when a download error should be retried."""
+    return isinstance(error, TransientPipelineError)
+
+
 def _download_bytes(pdf_url: str) -> bytes:
     """Download binary content from a PDF URL."""
-    with urlopen(pdf_url, timeout=30) as response:  # nosec B310
-        return response.read()
+    def operation() -> bytes:
+        """Perform one PDF download attempt."""
+        try:
+            with urlopen(pdf_url, timeout=30) as response:  # nosec B310
+                return response.read()
+        except HTTPError as exc:
+            if exc.code == 429 or exc.code >= 500:
+                raise TransientPipelineError(str(exc)) from exc
+            raise PermanentPipelineError(str(exc)) from exc
+        except (URLError, TimeoutError) as exc:
+            raise TransientPipelineError(str(exc)) from exc
+
+    return retry_call(
+        operation,
+        is_retryable=_is_retryable_download_error,
+        policy=RetryPolicy(max_attempts=3, initial_delay_seconds=0.2),
+    )
 
 
 def _looks_like_pdf(payload: bytes) -> bool:

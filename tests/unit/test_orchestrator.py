@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from arxiv_bot.models import PipelineInput
 from arxiv_bot.orchestrator import PipelineOrchestrator
 
@@ -38,3 +40,4 @@ def test_run_tracks_stage_history_end_to_end() -> None:
     assert orchestrator.last_run_report.transition_snapshots["discovery"] == ["discovered"]
     assert orchestrator.last_run_report.transition_snapshots["export"] == ["exported"]
     assert "\\section*{Literature Synthesis}" in orchestrator.last_run_report.literature_synthesis
+    assert Path("artifacts/run_manifest.json").exists()

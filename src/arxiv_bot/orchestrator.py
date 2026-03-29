@@ -11,6 +11,7 @@ from arxiv_bot.skills.metadata_bibtex import metadata_bibtex_skill
 from arxiv_bot.skills.paper_summary import paper_summary_skill
 from arxiv_bot.skills.pdf_download import pdf_download_skill
 from arxiv_bot.skills.qa_audit import qa_audit_skill
+from arxiv_bot.skills.run_manifest import write_run_manifest
 from arxiv_bot.skills.seed_ingest import seed_ingest_skill
 
 
@@ -136,6 +137,8 @@ class PipelineOrchestrator:
         self._qa_audit(records)
         report.stage_history.append("qa_audit")
         report.transition_snapshots["qa_audit"] = [r.status for r in records]
+
+        write_run_manifest(records, stage_history=report.stage_history)
 
         self.last_run_report = report
         return records

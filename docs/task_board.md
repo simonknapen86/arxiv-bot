@@ -53,10 +53,10 @@
 1. `P3-01` Implement `qa_audit_skill` [DONE]
 - Acceptance criteria: citation and cross-artifact checks pass/fail clearly
 
-2. `P3-02` Add retry policies and error taxonomy
+2. `P3-02` Add retry policies and error taxonomy [DONE]
 - Acceptance criteria: transient errors retried, permanent errors classified
 
-3. `P3-03` Add run manifests and provenance logging
+3. `P3-03` Add run manifests and provenance logging [DONE]
 - Acceptance criteria: every run emits machine-readable manifest
 
 ## P4 - DevEx and CI

@@ -1,11 +1,13 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from urllib.error import HTTPError, URLError
 from urllib.parse import quote
 from urllib.request import urlopen
 
 from arxiv_bot.models import PaperRecord
+from arxiv_bot.pipeline.errors import PermanentPipelineError, TransientPipelineError
+from arxiv_bot.pipeline.retry import RetryPolicy, retry_call
 
 
 @dataclass
@@ -14,13 +16,35 @@ class InspireClient:
 
     base_url: str = "https://inspirehep.net/api"
     timeout_seconds: int = 15
+    retry_policy: RetryPolicy = field(
+        default_factory=lambda: RetryPolicy(max_attempts=3, initial_delay_seconds=0.2)
+    )
+
+    def _is_retryable_error(self, error: Exception) -> bool:
+        """Return True when an INSPIRE request error should be retried."""
+        return isinstance(error, TransientPipelineError)
 
     def _fetch_text(self, url: str) -> str | None:
         """Fetch UTF-8 text from a URL and return None on transport errors."""
+        def operation() -> str:
+            """Perform one INSPIRE HTTP request attempt."""
+            try:
+                with urlopen(url, timeout=self.timeout_seconds) as response:  # nosec B310
+                    return response.read().decode("utf-8", errors="replace")
+            except HTTPError as exc:
+                if exc.code == 429 or exc.code >= 500:
+                    raise TransientPipelineError(str(exc)) from exc
+                raise PermanentPipelineError(str(exc)) from exc
+            except (URLError, TimeoutError) as exc:
+                raise TransientPipelineError(str(exc)) from exc
+
         try:
-            with urlopen(url, timeout=self.timeout_seconds) as response:  # nosec B310
-                return response.read().decode("utf-8", errors="replace")
-        except (HTTPError, URLError, TimeoutError):
+            return retry_call(
+                operation,
+                is_retryable=self._is_retryable_error,
+                policy=self.retry_policy,
+            )
+        except (TransientPipelineError, PermanentPipelineError):
             return None
 
     def _arxiv_url(self, arxiv_id: str) -> str:
