@@ -66,5 +66,5 @@
 2. `P4-02` Add fixture-driven e2e regression suite [DONE]
 - Acceptance criteria: stable snapshots on fixture corpus
 
-3. `P4-03` Add runbook and usage examples
+3. `P4-03` Add runbook and usage examples [DONE]
 - Acceptance criteria: new contributor can run local pipeline in < 15 minutes
