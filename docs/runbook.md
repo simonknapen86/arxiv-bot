@@ -26,6 +26,12 @@ cd arxiv_bot
 ```bash
 /opt/anaconda3/envs/openai311/bin/python3 scripts/run_pipeline.py
 ```
+Alternative top-level command flow:
+```bash
+./arxiv_bot.py -start
+./arxiv_bot.py -run settings.json
+./arxiv_bot.py -litreview
+```
 5. Confirm artifacts were produced.
 ```bash
 ls -lah artifacts
@@ -53,6 +59,7 @@ ls -lah artifacts/papers
 1. If summaries fall back to scaffold text, verify `OPENAI_API_KEY` and model access.
 2. If PDFs fail to download in live runs, retry with a known-valid arXiv seed.
 3. If TeX output does not compile, inspect for non-LaTeX-safe model output in `artifacts/*.tex`.
+4. If you edit `paper_summaries.tex` manually, regenerate only the survey with `scripts/run_literature_survey.py`.
 
 ## Related Docs
 1. `docs/architecture.md`

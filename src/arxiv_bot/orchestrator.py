@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -33,6 +34,7 @@ class PipelineOrchestrator:
         use_inspire_bibtex: bool = False,
         use_inspire_related_discovery: bool = False,
         artifacts_dir: str | Path = "artifacts",
+        show_progress: bool = True,
     ) -> None:
         """Initialize orchestrator stage order, run state, and external I/O modes."""
         self.stage_names = [
@@ -51,6 +53,14 @@ class PipelineOrchestrator:
         self.use_inspire_bibtex = use_inspire_bibtex
         self.use_inspire_related_discovery = use_inspire_related_discovery
         self.artifacts_dir = Path(artifacts_dir)
+        self.show_progress = show_progress
+
+    def _progress(self, stage: str, detail: str) -> None:
+        """Print a timestamped progress line for interactive pipeline runs."""
+        if not self.show_progress:
+            return
+        timestamp = datetime.now().strftime("%H:%M:%S")
+        print(f"[{timestamp}] {stage}: {detail}", flush=True)
 
     def _seed_ingest(self, payload: PipelineInput) -> list[dict[str, str]]:
         """Normalize and classify seed links from pipeline input."""
@@ -110,44 +120,56 @@ class PipelineOrchestrator:
     def run(self, payload: PipelineInput) -> list[PaperRecord]:
         """Execute the no-op stage pipeline with explicit transitions."""
         report = RunReport()
+        self._progress("pipeline", "starting run")
 
         ingested = self._seed_ingest(payload)
+        self._progress("seed_ingest", f"normalized seeds={len(ingested)}")
         report.stage_history.append("seed_ingest")
         report.transition_snapshots["seed_ingest"] = [item["source_link"] for item in ingested]
 
         records = self._discovery(payload, ingested)
+        self._progress("discovery", f"candidates={len(records)}")
         report.stage_history.append("discovery")
         report.transition_snapshots["discovery"] = [r.status for r in records]
 
         records = self._existence_verification(records)
+        self._progress("existence_verification", f"verified={len(records)}")
         report.stage_history.append("existence_verification")
         report.transition_snapshots["existence_verification"] = [r.status for r in records]
 
         records = self._pdf_download(records)
+        self._progress("pdf_download", f"downloaded={len(records)}")
         report.stage_history.append("pdf_download")
         report.transition_snapshots["pdf_download"] = [r.status for r in records]
 
         records = self._metadata_bibtex(records)
+        self._progress("metadata_bibtex", f"enriched={len(records)}")
         report.stage_history.append("metadata_bibtex")
         report.transition_snapshots["metadata_bibtex"] = [r.status for r in records]
 
         records = self._paper_summary(records)
+        self._progress("paper_summary", f"summarized={len(records)}")
         report.stage_history.append("paper_summary")
         report.transition_snapshots["paper_summary"] = [r.status for r in records]
 
         report.literature_synthesis = self._literature_synthesis(payload, records)
+        self._progress("literature_synthesis", "generated synthesis body")
         report.stage_history.append("literature_synthesis")
         report.transition_snapshots["literature_synthesis"] = [r.status for r in records]
 
         records = self._export(records, report.literature_synthesis)
+        self._progress("export", f"exported={len(records)} to {self.artifacts_dir}")
         report.stage_history.append("export")
         report.transition_snapshots["export"] = [r.status for r in records]
 
         self._qa_audit(records)
+        self._progress("qa_audit", "passed")
         report.stage_history.append("qa_audit")
         report.transition_snapshots["qa_audit"] = [r.status for r in records]
 
         write_run_manifest(records, stage_history=report.stage_history, artifacts_dir=self.artifacts_dir)
+        self._progress("manifest", f"wrote {self.artifacts_dir / 'run_manifest.json'}")
 
         self.last_run_report = report
+        self._progress("pipeline", f"completed run with records={len(records)}")
         return records

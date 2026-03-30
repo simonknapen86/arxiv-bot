@@ -6,6 +6,15 @@ Use this for a quick smoke run that writes artifacts.
 /opt/anaconda3/envs/openai311/bin/python3 scripts/run_pipeline.py
 ```
 
+## 1b) Use The Top-Level Interface
+Run these from the repository root:
+```bash
+./arxiv_bot.py -start
+./arxiv_bot.py -run settings.json
+./arxiv_bot.py -litreview
+./arxiv_bot.py -help
+```
+
 ## 2) Run A Deterministic Local Pipeline (No Live LLM Needed)
 This uses fixture PDF fetching and local BibTeX fallback for stable behavior.
 ```bash
@@ -61,4 +70,17 @@ sed -n '1,120p' artifacts/literature_review.tex
 ## 5) Run Regression Guardrails Before Committing
 ```bash
 /opt/anaconda3/envs/openai311/bin/python3 -m pytest -q -W error
+```
+
+## 6) Regenerate Only Literature Survey From Edited Summaries
+If you manually edit `artifacts/paper_summaries.tex`, rerun only synthesis:
+```bash
+/opt/anaconda3/envs/openai311/bin/python3 scripts/run_literature_survey.py \
+  --artifacts-dir artifacts \
+  --project-description "Updated survey after manual summary edits"
+```
+
+Deterministic mode (no model call):
+```bash
+/opt/anaconda3/envs/openai311/bin/python3 scripts/run_literature_survey.py --no-llm
 ```
