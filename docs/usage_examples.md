@@ -9,10 +9,16 @@ Use this for a quick smoke run that writes artifacts.
 ## 1b) Use The Top-Level Interface
 Run these from the repository root:
 ```bash
+./scripts/install_with_pip.sh --dev
 ./arxiv_bot.py -start
 ./arxiv_bot.py -run settings.json
 ./arxiv_bot.py -litreview
 ./arxiv_bot.py -help
+```
+
+After pip install, you can also run:
+```bash
+arxiv-bot -help
 ```
 
 ## 2) Run A Deterministic Local Pipeline (No Live LLM Needed)

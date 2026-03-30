@@ -1,1 +1,1 @@
-"""Skill stubs for the literature pipeline."""
+"""Skill implementations for the literature pipeline."""

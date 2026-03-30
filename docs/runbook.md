@@ -18,6 +18,10 @@ cd arxiv_bot
 ```bash
 /opt/anaconda3/envs/openai311/bin/python3 -m pip install -e .[dev]
 ```
+Installer routine (equivalent helper script):
+```bash
+./scripts/install_with_pip.sh --dev
+```
 3. Run the full test suite.
 ```bash
 /opt/anaconda3/envs/openai311/bin/python3 -m pytest -q -W error
@@ -31,6 +35,10 @@ Alternative top-level command flow:
 ./arxiv_bot.py -start
 ./arxiv_bot.py -run settings.json
 ./arxiv_bot.py -litreview
+```
+If installed via pip, you can use:
+```bash
+arxiv-bot -help
 ```
 5. Confirm artifacts were produced.
 ```bash

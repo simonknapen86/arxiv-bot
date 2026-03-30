@@ -13,6 +13,9 @@ dependencies = [
   "pypdf>=4.0",
 ]
 
+[project.scripts]
+arxiv-bot = "arxiv_bot.cli_entry:main"
+
 [project.optional-dependencies]
 dev = [
   "pytest>=8.0",

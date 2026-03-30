@@ -1,41 +1,53 @@
 # Architecture
 
+## Runtime Overview
 ```mermaid
 flowchart TD
-    A[User Input: seed links + topic description] --> B[seed_ingest_skill]
-    B --> C[discovery_skill]
-    C --> D[existence_verification_skill]
-    D -->|verified| E[pdf_download_skill]
-    D -->|rejected| X[Reject and Log]
-    E --> F[metadata_bibtex_skill]
-    E --> G[paper_summary_skill]
-    F --> H[export_skill]
-    G --> H
-    H --> I[paper_summaries.tex]
-    H --> J[literature_synthesis_skill]
-    J --> K[literature_review.tex]
-    H --> L[references.bib]
-    H --> M[papers folder with PDFs]
-    I --> N[qa_audit_skill]
-    K --> N
-    L --> N
-    M --> N
-    N --> O[Run Manifest + Pass or Fail]
+    U[User] --> CLI["./arxiv_bot.py / arxiv-bot"]
 
-    subgraph DB[SQLite]
-      P[papers table]
-      Q[runs table]
-    end
+    CLI -->|"-run settings.json"| O["PipelineOrchestrator.run()"]
+    CLI -->|"-litreview"| LR["regenerate_literature_review()"]
+    CLI -->|"-start"| ST["settings.json template"]
+    CLI -->|"-help"| HP["usage text"]
 
-    C --> P
-    D --> P
-    E --> P
-    N --> Q
+    O --> S1[seed_ingest_skill]
+    S1 --> S2[discovery_skill<br/>+ optional INSPIRE citing/cited expansion]
+    S2 --> S3[existence_verification_skill]
+    S3 --> S4[pdf_download_skill]
+    S4 --> S5[metadata_bibtex_skill<br/>+ INSPIRE BibTeX]
+    S5 --> S6[paper_summary_skill<br/>+ optional LLM]
+    S6 --> S7[literature_synthesis_skill<br/>+ optional LLM]
+    S7 --> S8[export_skill]
+    S8 --> S9[qa_audit_skill]
+    S9 --> S10[run_manifest]
+
+    S8 --> A1["artifacts/papers/*.pdf"]
+    S8 --> A2["artifacts/references.bib"]
+    S8 --> A3["artifacts/paper_summaries.tex"]
+    S8 --> A4["artifacts/literature_review.tex"]
+    S10 --> A5["artifacts/run_manifest.json"]
+
+    LR --> A3
+    LR --> S7
+    S7 --> A4
 ```
 
-## Core Components
-- Skills layer: modular task implementations with strict inputs/outputs.
-- Orchestrator: stage sequencing, retries, state transitions, and logging.
-- Storage: SQLite for run/paper lifecycle.
-- Exporters: deterministic generation of PDF, BibTeX, and TeX artifacts.
-- QA/Audit: cross-file consistency and citation integrity checks.
+## Main Components
+- `CLI entry`: supports `-run`, `-litreview`, `-start`, and `-help`.
+- `PipelineOrchestrator`: executes stage order, emits progress logs, and routes artifacts to configured output directory.
+- `Skills`: pure-ish task modules for ingest, discovery, verification, download, metadata, summary, synthesis, export, QA, and manifest.
+- `InspireClient`: INSPIRE API access for BibTeX, seed abstracts, and related-paper discovery.
+- `LLMClient`: optional model-backed generation for per-paper summaries and synthesis with deterministic fallbacks.
+
+## Data Contracts
+- `PipelineInput`: seed links, project description, include/exclude keywords, related-paper relevance thresholds.
+- `PaperRecord`: canonical per-paper state record through lifecycle:
+  `discovered -> verified -> downloaded -> metadata_enriched -> summarized -> exported`.
+
+## Output Guarantees
+- Verified outputs are written under `<target_dir>/artifacts` by default.
+- QA gate validates:
+  - artifact existence and non-empty content
+  - citation keys in TeX exist in `references.bib`
+  - each exported paper is cited and has a local PDF
+- Manifest captures stage history and per-paper provenance.
