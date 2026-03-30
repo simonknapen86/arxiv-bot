@@ -25,6 +25,7 @@ Agentic literature pipeline for finding, verifying, downloading, and summarizing
 ./arxiv_bot.py -start
 ./arxiv_bot.py -run settings.json
 ```
+Note: the Python path above is just an example. You can use any `python3` executable in an environment where the package and `pytest` are installed.
 
 ## CLI Modes
 - `./arxiv_bot.py -run settings.json` runs the full pipeline.
@@ -32,6 +33,17 @@ Agentic literature pipeline for finding, verifying, downloading, and summarizing
 - `./arxiv_bot.py -start` creates a template `settings.json`.
 - `./arxiv_bot.py -help` prints command usage.
 - If installed via pip, `arxiv-bot` is also available.
+
+## LLM Configuration
+- LLM-backed summaries/synthesis require `OPENAI_API_KEY` in your environment.
+- Optional model override: set `ARXIV_BOT_LLM_MODEL` (for example `gpt-4.1-mini`).
+- Example:
+```bash
+export OPENAI_API_KEY="<your-api-key>"
+export ARXIV_BOT_LLM_MODEL="gpt-4.1-mini"
+./arxiv_bot.py -run settings.json
+```
+- To change provider/model behavior in code, edit [llm_client.py](/Users/knapen/Dropbox/research/AI_tests/arxiv_bot/src/arxiv_bot/skills/llm_client.py).
 
 ## Docs
 - `docs/runbook.md` for setup, troubleshooting, and expected outputs
